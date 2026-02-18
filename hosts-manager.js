@@ -1,13 +1,13 @@
-const fs = require('fs');
+const fs = require("fs");
 
-const HOSTS_PATH = '/etc/hosts';
-const START_MARKER = '# genai-tunnel-start';
-const END_MARKER = '# genai-tunnel-end';
+const HOSTS_PATH = "/etc/hosts";
+const START_MARKER = "# multiplex-tunnel-start";
+const END_MARKER = "# multiplex-tunnel-end";
 
 function addHosts(hostnames, logger) {
   removeHosts(logger);
 
-  const entries = hostnames.map(h => `127.0.0.1 ${h}`).join('\n');
+  const entries = hostnames.map((h) => `127.0.0.1 ${h}`).join("\n");
   const block = `\n${START_MARKER}\n${entries}\n${END_MARKER}\n`;
 
   fs.appendFileSync(HOSTS_PATH, block);
@@ -20,19 +20,19 @@ function addHosts(hostnames, logger) {
 function removeHosts(logger) {
   let content;
   try {
-    content = fs.readFileSync(HOSTS_PATH, 'utf8');
+    content = fs.readFileSync(HOSTS_PATH, "utf8");
   } catch {
     return;
   }
 
   const regex = new RegExp(
     `\\n?${START_MARKER}[\\s\\S]*?${END_MARKER}\\n?`,
-    'g'
+    "g",
   );
 
   if (!regex.test(content)) return;
 
-  const cleaned = content.replace(regex, '\n');
+  const cleaned = content.replace(regex, "\n");
   fs.writeFileSync(HOSTS_PATH, cleaned);
   logger(`[HOSTS] Removed tunnel entries from ${HOSTS_PATH}`);
 }
