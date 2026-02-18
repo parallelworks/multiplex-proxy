@@ -1,0 +1,13 @@
+ssh:
+  identityFile: ~/.ssh/pwcli
+  user: username
+  jumpHost: workspace
+  proxyCommand: "ssh -W %h:%p jumpbox"
+
+sites:
+  - host: app.example.com
+    port: 443
+    localPort: 10443
+  - host: api.example.com
+    port: 443
+    localPort: 10444
