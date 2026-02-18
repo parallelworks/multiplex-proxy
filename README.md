@@ -1,4 +1,4 @@
-# Parallel Works Proxy
+# Parallel Works Multiplex Proxy
 
 SSH tunnel proxy that multiplexes multiple HTTPS sites through a single local port using SNI-based routing.
 
