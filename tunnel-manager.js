@@ -1,14 +1,17 @@
 const { spawn } = require('child_process');
 const os = require('os');
 const path = require('path');
+const { EventEmitter } = require('events');
 
-class TunnelManager {
+class TunnelManager extends EventEmitter {
   constructor(sshConfig, sites, logger) {
+    super();
     this.sshConfig = sshConfig;
     this.sites = sites;
     this.logger = logger;
     this.processes = new Map(); // host -> { proc, restartTimer }
     this.stopped = false;
+    this.STARTUP_GRACE_PERIOD_MS = 15000;
   }
 
   startAll() {
@@ -47,21 +50,35 @@ class TunnelManager {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
+    const startedAt = Date.now();
+    let stderrBuf = '';
+
     proc.stdout.on('data', (d) => {
       this.logger(`[TUNNEL:${site.host}] ${d.toString().trim()}`);
     });
 
     proc.stderr.on('data', (d) => {
-      this.logger(`[TUNNEL:${site.host}] ${d.toString().trim()}`);
+      const text = d.toString().trim();
+      stderrBuf += text + '\n';
+      this.logger(`[TUNNEL:${site.host}] ${text}`);
     });
 
     proc.on('exit', (code, signal) => {
       this.logger(`[TUNNEL] ${site.host} exited (code=${code}, signal=${signal})`);
-      if (!this.stopped) {
-        this.logger(`[TUNNEL] Restarting ${site.host} in 3s...`);
-        const timer = setTimeout(() => this._startOne(site), 3000);
-        this.processes.set(site.host, { proc: null, restartTimer: timer });
+      if (this.stopped) return;
+
+      const elapsed = Date.now() - startedAt;
+      if (code !== 0 && elapsed < this.STARTUP_GRACE_PERIOD_MS) {
+        this.logger(`[TUNNEL] ${site.host} failed during startup (exited in ${elapsed}ms)`);
+        this.emit('error', new Error(
+          `Tunnel for ${site.host} failed to establish: ${stderrBuf.trim() || `exit code ${code}`}`
+        ));
+        return;
       }
+
+      this.logger(`[TUNNEL] Restarting ${site.host} in 3s...`);
+      const timer = setTimeout(() => this._startOne(site), 3000);
+      this.processes.set(site.host, { proc: null, restartTimer: timer });
     });
 
     this.processes.set(site.host, { proc, restartTimer: null });
