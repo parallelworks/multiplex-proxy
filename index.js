@@ -36,6 +36,14 @@ addHosts(hostnames, log);
 
 // 2. Start SSH tunnels
 const tunnels = new TunnelManager(config.ssh, config.sites, log);
+tunnels.on('error', (err) => {
+  log(`[TUNNEL] FATAL: ${err.message}`);
+  log('[TUNNEL] Cannot establish tunnels. Cleaning up and exiting.');
+  proxy.close();
+  tunnels.stopAll();
+  removeHosts(log);
+  process.exit(1);
+});
 tunnels.startAll();
 
 // 3. Start SNI proxy on port 443
