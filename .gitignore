@@ -1,2 +1,4 @@
 node_modules/
 config.yaml
+config-hpcmp.yaml
+config-noaa.yaml
