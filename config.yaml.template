@@ -1,8 +1,12 @@
+# pw-multiplex-proxy config.
+# Auth is handled by the pw CLI — run `pw auth token` or `pw auth apikey` first.
+# See: https://parallelworks.com/docs/cli/pw/auth
+
 ssh:
-  identityFile: ~/.ssh/pwcli
-  user: username
-  jumpHost: workspace
-  proxyCommand: "ssh -W %h:%p jumpbox"
+  identityFile: ~/.ssh/pwcli                  # managed by `pw auth`
+  user: USERNAME                              # your pw username
+  jumpHost: workspace                         # short name of your ACTIVATE workspace
+  proxyCommand: "pw ssh --proxy-command %h"   # tunnel through ACTIVATE
 
 sites:
   - host: app.example.com
