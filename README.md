@@ -44,7 +44,9 @@ Browser → /etc/hosts            app.example.com → 127.0.0.1
    ```bash
    pw auth whoami
    ```
-3. **Node.js** (for this proxy) and **sudo** (for `:443` and `/etc/hosts`).
+3. **Node.js** (for this proxy) and an elevated shell for the hosts file (and, on macOS/Linux, port `:443`):
+   - macOS/Linux: run with `sudo`.
+   - Windows: run from an Administrator terminal. Requires the built-in OpenSSH client (`ssh` on `PATH`, included since Windows 10) and the `pw` CLI on `PATH`.
 
 ## Setup
 
@@ -76,12 +78,26 @@ Each site needs a unique `localPort`. Because auth flows through `~/.ssh/pwcli`,
 
 ## Usage
 
+macOS/Linux:
+
 ```bash
 sudo node index.js
 # Ctrl+C cleans up /etc/hosts and kills tunnels
 ```
 
+Windows (Administrator terminal):
+
+```powershell
+node index.js
+# Ctrl+C cleans up the hosts file and kills tunnels
+```
+
 Open `https://app.example.com` in your browser — it resolves to `127.0.0.1`, hits the SNI proxy, and is forwarded through your ACTIVATE workspace.
+
+### Windows notes
+
+- Hosts entries are managed in `C:\Windows\System32\drivers\etc\hosts`.
+- If something else owns port 443 (IIS, or HTTP.sys via `World Wide Web Publishing`), stop it or the proxy exits with `EADDRINUSE`. `netstat -ano | findstr :443` shows the owner.
 
 ## Using without ACTIVATE
 

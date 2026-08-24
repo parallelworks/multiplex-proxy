@@ -3,11 +3,16 @@ const path = require('path');
 const yaml = require('js-yaml');
 const { TunnelManager } = require('./tunnel-manager');
 const { createSNIProxy } = require('./sni-proxy');
-const { addHosts, removeHosts } = require('./hosts-manager');
+const { addHosts, removeHosts, HOSTS_PATH } = require('./hosts-manager');
 
 function log(msg) {
   console.log(`[${new Date().toISOString()}] ${msg}`);
 }
+
+const ELEVATION_HINT =
+  process.platform === 'win32'
+    ? 'Run from an elevated (Administrator) terminal.'
+    : 'Run with sudo.';
 
 // Load config
 const configPath = path.join(__dirname, 'config.yaml');
@@ -30,9 +35,17 @@ for (const site of config.sites) {
   routeMap[site.host] = site.localPort;
 }
 
-// 1. Add /etc/hosts entries
+// 1. Add hosts file entries
 const hostnames = config.sites.map(s => s.host);
-addHosts(hostnames, log);
+try {
+  addHosts(hostnames, log);
+} catch (err) {
+  if (err.code === 'EACCES' || err.code === 'EPERM') {
+    console.error(`Permission denied updating ${HOSTS_PATH}. ${ELEVATION_HINT}`);
+    process.exit(1);
+  }
+  throw err;
+}
 
 // 2. Start SSH tunnels
 const tunnels = new TunnelManager(config.ssh, config.sites, log);
@@ -51,6 +64,8 @@ const proxy = createSNIProxy(routeMap, log);
 proxy.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     log('[PROXY] ERROR: Port 443 is already in use. Is another tunnel or web server running?');
+  } else if (err.code === 'EACCES') {
+    log(`[PROXY] ERROR: Permission denied binding port 443. ${ELEVATION_HINT}`);
   } else {
     log(`[PROXY] ERROR: ${err.message}`);
   }

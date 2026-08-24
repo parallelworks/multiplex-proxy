@@ -4,7 +4,7 @@
   "description": "Parallel Works ACTIVATE companion: multiplex multiple HTTPS sites from a workspace through one local port via SNI routing over pw ssh tunnels",
   "main": "index.js",
   "scripts": {
-    "start": "sudo node index.js",
+    "start": "node index.js",
     "test": "node tests/sni-proxy.test.js"
   },
   "dependencies": {

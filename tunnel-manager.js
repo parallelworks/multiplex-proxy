@@ -90,7 +90,12 @@ class TunnelManager extends EventEmitter {
       if (entry.restartTimer) clearTimeout(entry.restartTimer);
       if (entry.proc) {
         this.logger(`[TUNNEL] Killing ${host} (pid=${entry.proc.pid})`);
-        entry.proc.kill('SIGTERM');
+        if (process.platform === 'win32') {
+          // TerminateProcess would orphan the ProxyCommand child; kill the tree.
+          spawn('taskkill', ['/pid', String(entry.proc.pid), '/T', '/F']);
+        } else {
+          entry.proc.kill('SIGTERM');
+        }
       }
     }
     this.processes.clear();
